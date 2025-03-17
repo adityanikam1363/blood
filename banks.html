@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html >
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Blood Banks</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Select Blood Type</h2>
+        <div id="bloodTypes">
+            <button onclick="filterBloodBanks('All')">All</button>
+            <button onclick="filterBloodBanks('A+')">A+</button>
+            <button onclick="filterBloodBanks('A-')">A-</button>
+            <button onclick="filterBloodBanks('B+')">B+</button>
+            <button onclick="filterBloodBanks('B-')">B-</button>
+            <button onclick="filterBloodBanks('O+')">O+</button>
+            <button onclick="filterBloodBanks('O-')">O-</button>
+            <button onclick="filterBloodBanks('AB+')">AB+</button>
+            <button onclick="filterBloodBanks('AB-')">AB-</button>
+        </div>
+
+        <div id="map"></div>
+        <ul id="bankList">
+            <li>Loading nearby blood banks...</li>
+        </ul>
+    </div>
+
+    <script>
+        let map;
+        let markers = [];
+        const bloodBanks = [
+            { name: "Jeevandhara Blood Bank", lat: 16.6574125, lng: 73.9812278, contact: "+123456789", availableBlood: ["A+", "B+", "O+"] },
+            { name: "Arpan blood bank", lat: 16.6574125, lng: 73.9812278, contact: "+987654321", availableBlood: ["A-", "O-", "A+"] },
+            { name: "Sanjeevan Blood Bank", lat: 16.6574125, lng: 73.9812278, contact: "+1122334455", availableBlood: ["B+", "AB+"] }
+        ];
+
+        function initMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    map = L.map('map').setView([userLat, userLng], 12);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    L.marker([userLat, userLng]).addTo(map)
+                        .bindPopup("You are here")
+                        .openPopup();
+
+                    filterBloodBanks("All");
+                }, () => {
+                    alert("Unable to fetch location. Please enable GPS.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function filterBloodBanks(selectedType) {
+            markers.forEach(marker => map.removeLayer(marker)); // Clear previous markers
+            markers = [];
+
+            const bankList = document.getElementById("bankList");
+            bankList.innerHTML = "";
+
+            let foundBanks = false;
+            bloodBanks.forEach(bank => {
+                if (selectedType === "All" || bank.availableBlood.includes(selectedType)) {
+                    foundBanks = true;
+                    const marker = L.marker([bank.lat, bank.lng]).addTo(map)
+                        .bindPopup(`<b>${bank.name}</b><br><a href="tel:${bank.contact}" class="call-button">Call ${bank.contact}</a>`);
+                    markers.push(marker);
+
+                    const listItem = document.createElement("li");
+                    listItem.innerHTML = `
+                        <h3>${bank.name}</h3>
+                        <p>Available: ${bank.availableBlood.join(", ")}</p>
+                        <p>Contact: <a href="tel:${bank.contact}" class="call-button">${bank.contact}</a></p>
+                    `;
+                    bankList.appendChild(listItem);
+                }
+            });
+
+            if (!foundBanks) {
+                bankList.innerHTML = `<li>No blood banks found with ${selectedType} blood.</li>`;
+            }
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
